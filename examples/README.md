@@ -42,9 +42,9 @@ tofu validate
 The recommended learning sequence is:
 **01 → 02**
 
-Read the selected example's Deployment Steps before provisioning it. Both require an existing organization and subscription, bootstrap authentication and administration rights. Example 01 creates its Resource Group in `resource_group.tf`; example 02 currently requires an existing Resource Group. Example 02 first creates an empty vault with the group link disabled; populate secrets outside Terraform before enabling the link.
+Read the selected example's Deployment Steps before provisioning it. Both require an existing organization and subscription, bootstrap authentication and administration rights. Both examples create their Resource Group in `resource_group.tf`. Example 02 first creates an empty vault with the group link disabled; populate secrets outside Terraform before enabling the link.
 
-Both examples passed static validation. During initial module verification neither was planned or applied. Example 01 was subsequently deployed successfully (7 resources) in foggykitchendevops after resolving organization access; its screenshots are documented in the example README, and all 7 managed resources were subsequently destroyed successfully. Runtime OIDC token exchange is not yet tested. Example 02 remains statically validated only. Full output is available in [VERIFICATION.md](../VERIFICATION.md).
+Both examples passed static validation. During initial module verification neither was planned or applied. Example 01 was subsequently deployed successfully (7 resources) in foggykitchendevops after resolving organization access; its screenshots are documented in the example README, and all 7 managed resources were subsequently destroyed successfully. Runtime OIDC token exchange is not yet tested. Example 02 stage 1 has now been deployed successfully (8 resources); secret population and the variable-group link remain pending. Full output is available in [VERIFICATION.md](../VERIFICATION.md).
 
 ---
 
@@ -53,7 +53,7 @@ Both examples passed static validation. During initial module verification neith
 - One example = one architectural goal
 - Passwordless ARM service connections with exact issuer/subject trust
 - Azure RBAC and Key Vault lifecycle composed through dedicated modules
-- Existing organization supplied explicitly; example 01 creates its RBAC scope as a Resource Group
+- Existing organization supplied explicitly; each example creates its RBAC scope as a Resource Group
 - Secret names may be configured; secret values and provider credentials stay outside source control
 - Static validation is not represented as successful runtime deployment
 

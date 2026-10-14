@@ -226,3 +226,15 @@ Destroy complete! Resources: 7 destroyed.
 ```
 
 A local state check confirmed zero remaining managed resources. The externally created Azure DevOps organization was retained.
+
+## Example 02 stage 1 deployment
+
+Example 02 now follows the same resource_group.tf convention as example 01 and assigns Reader at the created group ID. Its Key Vault policy grants the pipeline principal Get/List and the bootstrap AzureRM principal Get/List/Set for external secret population. No secret values are managed by Terraform.
+
+`tofu fmt -check -no-color`, `tofu init -no-color` and `tofu validate -no-color` all exited 0 after the change. A user-authorized stage 1 apply completed successfully:
+
+```text
+Apply complete! Resources: 8 added, 0 changed, 0 destroyed.
+```
+
+The vault is fk-devops-kv-9f064c73; the variable-group link remains disabled and variable_group_ids is empty. Stage 2 and runtime OIDC are not yet verified.

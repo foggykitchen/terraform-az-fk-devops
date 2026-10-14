@@ -197,7 +197,7 @@ Group names must be unique and group/variable/vault names nonblank. `allow_acces
 - [01_project_with_oidc_service_connection](examples/01_project_with_oidc_service_connection/): smallest project/WIF/RBAC configuration, using Reader on its own Resource Group.
 - [02_project_with_keyvault_variable_group](examples/02_project_with_keyvault_variable_group/): adds a composed Key Vault and a staged secret-name-only variable-group link.
 
-See [examples](examples/README.md). Dependencies are pinned to live-reviewed commit SHAs. Example 01 creates its Resource Group in `resource_group.tf`; example 02 currently accepts an existing group. Both create no pipeline or YAML template.
+See [examples](examples/README.md). Dependencies are pinned to live-reviewed commit SHAs. Both examples create their own Resource Group in `resource_group.tf`. Both create no pipeline or YAML template.
 
 ---
 

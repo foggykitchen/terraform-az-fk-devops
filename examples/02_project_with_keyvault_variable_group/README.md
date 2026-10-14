@@ -16,7 +16,7 @@ flowchart LR
     A[Entra application and service principal] --> C
     C --> F[Application federated credential]
     A --> R[External FK RBAC assignment]
-    R --> T[Existing Azure scope]
+    R --> T[Example Resource Group]
     A --> K[FK Key Vault with Get/List policy]
     K --> G[Key Vault-linked variable group]
     C --> G
@@ -27,7 +27,8 @@ This example creates:
 
 - The project, Entra identity and federated trust from Example 01
 - An external FK RBAC assignment for the existing target Azure scope
-- One Key Vault through `terraform-az-fk-key-vault`, in an existing Resource Group
+- One Resource Group in `resource_group.tf`
+- One Key Vault through `terraform-az-fk-key-vault`, in the Resource Group created by this example
 - A Get/List access policy for the pipeline service principal
 - One Key Vault-linked variable group when `link_variable_group = true`
 
@@ -56,11 +57,11 @@ It focuses on:
 ### Prerequisites
 
 - An existing Azure DevOps organization and permissions to create projects, service connections and variable groups
-- An existing Azure subscription and Resource Group, with permission to assign Azure roles
+- An existing Azure subscription, with permission to create Resource Groups and assign Azure roles
 - Entra permissions to create and manage applications, service principals and federated credentials
 - Bootstrap authentication configured externally for the AzureDevOps, AzureAD and AzureRM providers
 
-Copy `terraform.tfvars.example` to ignored `terraform.tfvars` and replace the placeholder identifiers. Set `rbac_scope` to an existing scope in the supplied subscription. The example defaults to `Reader` for authenticated reads; select a narrowly scoped deployment role for a later pipeline that needs writes. Keep provider credentials outside HCL and tfvars.
+Copy `terraform.tfvars.example` to ignored `terraform.tfvars` and replace the placeholder identifiers. Set `resource_group_name` and `location`; the example creates the group and uses its ID as the RBAC scope. The example defaults to `Reader` for authenticated reads; select a narrowly scoped deployment role for a later pipeline that needs writes. Keep provider credentials outside HCL and tfvars.
 
 ### Stage 1 — Create the project, trust and vault
 
@@ -89,7 +90,7 @@ tofu apply
 
 ### Stage 2 — Populate the vault and enable the link
 
-Have an authorized operator populate the vault through an external secret-management process. The pipeline identity has only Get/List permissions; the operator needs separate secret-write permission. Never put secret values in Terraform or tfvars.
+Have an authorized operator populate the vault through an external secret-management process. The pipeline identity has only Get/List permissions; the bootstrap AzureRM principal receives a separate Get/List/Set access policy to populate the vault outside Terraform. Never put secret values in Terraform or tfvars.
 
 Set the existing enabled secret names and enable the variable group:
 
@@ -108,13 +109,13 @@ The AzureDevOps provider checks that named secrets exist when creating the group
 
 Authorize the intended pipeline to use both the connection and variable group. `allow_access` remains false. Existing secret value rotations are fetched at runtime; adding or removing mapped names requires updating `secret_names`. Only secrets are supported, not keys or certificates. The provider's `search_depth` defaults to 20 and can be increased through the root module contract.
 
-`devops.tf`, `rbac.tf` and `key_vault.tf` separate control-plane, RBAC and vault composition. The external modules are pinned to reviewed commits.
+`resource_group.tf` creates the group; `devops.tf`, `rbac.tf` and `key_vault.tf` separate control-plane, RBAC and vault composition. The external modules are pinned to reviewed commits.
 
 ---
 
 ## 🖼️ Azure Portal View
 
-No Azure Portal or Azure DevOps screenshots have been collected because this example has not been deployed during verification. After both stages, inspect the vault access policy, Entra federated credential and the Library variable group's secret-name mappings.
+Stage 1 has been deployed successfully; Azure Portal and Azure DevOps screenshots have not yet been collected. After both stages, inspect the vault access policy, Entra federated credential and the Library variable group's secret-name mappings.
 
 ---
 
@@ -130,7 +131,13 @@ Static verification completed on **October 14, 2026** with OpenTofu **1.11.6**:
 
 Full command output, including the initial sandbox plugin error and successful rerun, is recorded in [VERIFICATION.md](../../VERIFICATION.md).
 
-No plan, apply or runtime token exchange was executed. To verify passwordless authentication after deployment, authorize an independently managed Azure Pipeline to use the connection, then run a WIF-capable Azure task that reads the selected scope. Pipeline definitions and YAML belong to the separately built [terraform-az-fk-devops-pipeline](https://github.com/foggykitchen/terraform-az-fk-devops-pipeline) sibling and the caller's repository.
+A later user-authorized stage 1 apply completed successfully:
+
+```text
+Apply complete! Resources: 8 added, 0 changed, 0 destroyed.
+```
+
+Stage 1 created the project, WIF trust, Resource Group, external RBAC and Key Vault. The group link remains disabled (`variable_group_ids = {}`) pending external secret population. Stage 2 and runtime token exchange have not yet been verified. To verify passwordless authentication after deployment, authorize an independently managed Azure Pipeline to use the connection, then run a WIF-capable Azure task that reads the selected scope. Pipeline definitions and YAML belong to the separately built [terraform-az-fk-devops-pipeline](https://github.com/foggykitchen/terraform-az-fk-devops-pipeline) sibling and the caller's repository.
 
 The outputs expose the service connection ID/name and exact issuer/subject. Trust creation and the RBAC assignment are dependencies of the example's connection ID output; Entra and RBAC propagation can still take time. See the root [Provider Notes](../../README.md#provider-notes) before issuer conversion or connection renaming.
 
@@ -142,7 +149,7 @@ The outputs expose the service connection ID/name and exact issuer/subject. Trus
 tofu destroy
 ```
 
-Review project contents and vault data before deletion. Key Vault soft deletion and name retention can delay name reuse. The existing subscription, Resource Group and target deployment resources remain externally managed.
+Review project contents and vault data before deletion. Key Vault soft deletion and name retention can delay name reuse. The example Resource Group is also removed. The existing subscription and target deployment resources remain externally managed.
 
 ---
 

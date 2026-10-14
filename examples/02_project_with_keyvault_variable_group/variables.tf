@@ -24,11 +24,6 @@ variable "project_name" {
   default     = "fk-devops-demo"
 }
 
-variable "rbac_scope" {
-  description = "Existing subscription or resource group resource ID for pipeline access."
-  type        = string
-}
-
 variable "role_definition_name" {
   description = "Role granted to the pipeline service principal."
   type        = string
@@ -41,7 +36,7 @@ variable "key_vault_name" {
 }
 
 variable "resource_group_name" {
-  description = "Existing resource group for the Key Vault."
+  description = "Resource Group created by this example for the Key Vault."
   type        = string
 }
 
