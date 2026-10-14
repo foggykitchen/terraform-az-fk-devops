@@ -24,9 +24,16 @@ variable "project_name" {
   default     = "fk-devops-demo"
 }
 
-variable "rbac_scope" {
-  description = "Existing subscription or resource group resource ID for pipeline access."
+variable "resource_group_name" {
+  description = "Resource Group created by this example."
   type        = string
+  default     = "foggykitchen-rg"
+}
+
+variable "location" {
+  description = "Azure region for the example Resource Group."
+  type        = string
+  default     = "westeurope"
 }
 
 variable "role_definition_name" {

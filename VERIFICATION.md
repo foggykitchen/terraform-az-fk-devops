@@ -171,6 +171,7 @@ terraform-az-fk-devops/
     │   ├── outputs.tf
     │   ├── providers.tf
     │   ├── rbac.tf
+    │   ├── resource_group.tf
     │   ├── terraform.tfvars.example
     │   └── variables.tf
     └── 02_project_with_keyvault_variable_group/
@@ -183,3 +184,25 @@ terraform-az-fk-devops/
         ├── terraform.tfvars.example
         └── variables.tf
 ```
+
+## Example 01 Resource Group correction
+
+Example 01 now creates its own Resource Group in resource_group.tf, matching the existing FK RBAC and Front Door example convention. Its RBAC scope comes directly from the resource ID. The root module remains control-plane only. Local terraform.tfvars uses the supplied organization and active Azure CLI subscription, and remains ignored.
+
+Example 01 checks after this correction: `tofu fmt -check -no-color` exited 0 with empty output; `tofu init -no-color` exited 0, reusing AzureDevOps 1.16.0, AzureAD 3.10.0 and AzureRM 4.81.0; `tofu validate -no-color` exited 0:
+
+```text
+Success! The configuration is valid.
+```
+
+A subsequently user-authorized `tofu apply -auto-approve -input=false -no-color` exited 1 during provider configuration/planning, before resource creation. The partial plan listed 4 additions, but execution did not begin. Full error:
+
+```text
+Error: Azure DevOps Organization: https://dev.azure.com/foggykitchen doesn't exist or can't be found. Make sure the URL is correct.
+
+  with provider["registry.opentofu.org/microsoft/azuredevops"],
+  on providers.tf line 19, in provider "azuredevops":
+  19: provider "azuredevops" {
+```
+
+Organization URL/access must be resolved before retrying. No successful deployment or runtime OIDC test is claimed.

@@ -28,3 +28,8 @@ output "workload_identity_federation_subject" {
   description = "Exact subject returned by Azure DevOps."
   value       = module.devops.workload_identity_federation_subject
 }
+
+output "resource_group_id" {
+  description = "Resource Group created as the example RBAC scope."
+  value       = azurerm_resource_group.foggykitchen_rg.id
+}

@@ -42,9 +42,9 @@ tofu validate
 The recommended learning sequence is:
 **01 → 02**
 
-Read the selected example's Deployment Steps before provisioning it. Both require an existing organization, subscription and Resource Group, bootstrap authentication and administration rights. Example 02 first creates an empty vault with the group link disabled; populate secrets outside Terraform before enabling the link.
+Read the selected example's Deployment Steps before provisioning it. Both require an existing organization and subscription, bootstrap authentication and administration rights. Example 01 creates its Resource Group in `resource_group.tf`; example 02 currently requires an existing Resource Group. Example 02 first creates an empty vault with the group link disabled; populate secrets outside Terraform before enabling the link.
 
-Both examples passed static validation. Neither was planned, applied or tested against a real organization during module verification. Full output is available in [VERIFICATION.md](../VERIFICATION.md).
+Both examples passed static validation. During initial module verification neither was planned or applied. A later authorized apply of example 01 stopped before creation because the provider could not find or access the configured organization; example 02 remains statically validated only. Full output is available in [VERIFICATION.md](../VERIFICATION.md).
 
 ---
 
@@ -53,7 +53,7 @@ Both examples passed static validation. Neither was planned, applied or tested a
 - One example = one architectural goal
 - Passwordless ARM service connections with exact issuer/subject trust
 - Azure RBAC and Key Vault lifecycle composed through dedicated modules
-- Existing organization and target scopes supplied explicitly
+- Existing organization supplied explicitly; example 01 creates its RBAC scope as a Resource Group
 - Secret names may be configured; secret values and provider credentials stay outside source control
 - Static validation is not represented as successful runtime deployment
 
@@ -62,7 +62,8 @@ These examples intentionally avoid:
 - Creating the Azure DevOps organization
 - Pipeline definitions, pipeline YAML and stage/job/step logic
 - Source repository lifecycle
-- Resource Group, networking or deployment-target creation
+- Resource Group creation inside the root module
+- Networking or deployment-target creation
 - Hidden dependencies between example states
 
 ---
