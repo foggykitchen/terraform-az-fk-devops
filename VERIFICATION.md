@@ -258,3 +258,7 @@ Destroy complete! Resources: 9 destroyed.
 ```
 
 The local state contains zero managed resources. The external Azure DevOps organization was retained.
+
+## Local artifact cleanup
+
+After both successful destroys, removed root/example .terraform caches, generated lockfiles, empty state files and backups, and local terraform.tfvars files. Source .tf files, terraform.tfvars.example templates and screenshot evidence were retained. Both example states were checked for zero remaining managed resources before deletion.
