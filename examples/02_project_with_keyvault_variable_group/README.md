@@ -181,6 +181,14 @@ The outputs expose the service connection ID/name and exact issuer/subject. Trus
 tofu destroy
 ```
 
+Cleanup completed successfully after collecting the screenshots:
+
+```text
+Destroy complete! Resources: 9 destroyed.
+```
+
+The local state contains no remaining managed resources. The external Azure DevOps organization was retained.
+
 Review project contents and vault data before deletion. Key Vault soft deletion and name retention can delay name reuse. The example Resource Group is also removed. The existing subscription and target deployment resources remain externally managed.
 
 ---

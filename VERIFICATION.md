@@ -248,3 +248,13 @@ Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 ```
 
 The created group is fk-key-vault-secrets, with variable_group_ids = { vault = "1" }. The provider validated enabled secret metadata through the WIF endpoint. Pipeline runtime retrieval of the value was not tested. Seven screenshots are included in the example README as Figures 1–7: project, WIF connection, vault, Get/List policy, inherited Reader assignment, secret names, and linked variable group. The screenshots contain no displayed secret values.
+
+## Example 02 cleanup
+
+The user-authorized `tofu destroy -auto-approve -input=false -no-color` exited 0:
+
+```text
+Destroy complete! Resources: 9 destroyed.
+```
+
+The local state contains zero managed resources. The external Azure DevOps organization was retained.
