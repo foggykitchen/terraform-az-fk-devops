@@ -44,7 +44,7 @@ The recommended learning sequence is:
 
 Read the selected example's Deployment Steps before provisioning it. Both require an existing organization and subscription, bootstrap authentication and administration rights. Example 01 creates its Resource Group in `resource_group.tf`; example 02 currently requires an existing Resource Group. Example 02 first creates an empty vault with the group link disabled; populate secrets outside Terraform before enabling the link.
 
-Both examples passed static validation. During initial module verification neither was planned or applied. A later authorized apply of example 01 stopped before creation because the provider could not find or access the configured organization; example 02 remains statically validated only. Full output is available in [VERIFICATION.md](../VERIFICATION.md).
+Both examples passed static validation. During initial module verification neither was planned or applied. Example 01 was subsequently deployed successfully (7 resources) in foggykitchendevops after resolving organization access; its screenshots are documented in the example README, and all 7 managed resources were subsequently destroyed successfully. Runtime OIDC token exchange is not yet tested. Example 02 remains statically validated only. Full output is available in [VERIFICATION.md](../VERIFICATION.md).
 
 ---
 

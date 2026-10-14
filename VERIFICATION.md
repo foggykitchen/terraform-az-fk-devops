@@ -206,3 +206,23 @@ Error: Azure DevOps Organization: https://dev.azure.com/foggykitchen doesn't exi
 ```
 
 Organization URL/access must be resolved before retrying. No successful deployment or runtime OIDC test is claimed.
+
+## Successful example 01 deployment
+
+After resolving organization access, a user-authorized apply to foggykitchendevops completed successfully:
+
+```text
+Apply complete! Resources: 7 added, 0 changed, 0 destroyed.
+```
+
+The service connection returned an Entra issuer (`https://login.microsoftonline.com/{tenant-id}/v2.0`) and an `/eid1/.../sc/{organization-id}/{service-connection-id}` subject. Four user-supplied screenshots are included with Figure captions in the example README. They confirm the configured project, WIF method, federated credential and Reader assignment; they do not demonstrate runtime token exchange. The earlier failed attempts above remain historical evidence.
+
+## Example 01 cleanup
+
+User-authorized `tofu destroy -auto-approve -input=false -no-color` exited 0:
+
+```text
+Destroy complete! Resources: 7 destroyed.
+```
+
+A local state check confirmed zero remaining managed resources. The externally created Azure DevOps organization was retained.

@@ -78,7 +78,21 @@ tofu apply
 
 ## 🖼️ Azure Portal View
 
-No Azure Portal screenshots have been collected because this example has not been deployed during verification. After deployment, inspect the project service connection, Entra application's federated credential and the target scope's role assignment.
+<img src="01_project_with_oidc_service_connection_project_overview.jpg" width="900"/>
+
+*Figure 1. Private Azure DevOps project fk-devops-demo in the foggykitchendevops organization.*
+
+<img src="01_project_with_oidc_service_connection_service_connection.jpg" width="900"/>
+
+*Figure 2. Azure Resource Manager service connection fk-azure-oidc using Workload Identity federation (Manual), without a stored Azure client secret.*
+
+<img src="01_project_with_oidc_service_connection_federated_credential.jpg" width="900"/>
+
+*Figure 3. Application federated credential with the Microsoft Entra issuer, explicit Azure DevOps subject and api://AzureADTokenExchange audience.*
+
+<img src="01_project_with_oidc_service_connection_role_assignment.jpg" width="900"/>
+
+*Figure 4. Reader role assigned to the application service principal at the foggykitchen-rg Resource Group scope.*
 
 ---
 
@@ -94,7 +108,15 @@ Static verification completed on **October 14, 2026** with OpenTofu **1.11.6**:
 
 Full command output, including the initial sandbox plugin error and successful rerun, is recorded in [VERIFICATION.md](../../VERIFICATION.md).
 
-A later authorized `tofu apply` attempt stopped before resource creation because the AzureDevOps provider could not find or access the configured organization. No successful deployment or runtime token exchange has been verified. To verify passwordless authentication after deployment, authorize an independently managed Azure Pipeline to use the connection, then run a WIF-capable Azure task that reads the selected scope. Pipeline definitions and YAML belong to the separately built [terraform-az-fk-devops-pipeline](https://github.com/foggykitchen/terraform-az-fk-devops-pipeline) sibling and the caller's repository.
+The example was successfully deployed to the `foggykitchendevops` organization on **October 14, 2026** after resolving organization access. OpenTofu reported:
+
+```text
+Apply complete! Resources: 7 added, 0 changed, 0 destroyed.
+```
+
+The screenshots confirm the private project, manual WIF ARM connection, Entra federated credential and Resource Group-scoped Reader assignment. The returned issuer uses `https://login.microsoftonline.com/{tenant-id}/v2.0` and the subject uses the Entra-issued `/eid1/.../sc/{organization-id}/{service-connection-id}` format. No client secret was created.
+
+Runtime OIDC token exchange has not been tested; the service connection screenshot shows its configured authentication method, not a successful connection verification. To verify passwordless authentication after deployment, authorize an independently managed Azure Pipeline to use the connection, then run a WIF-capable Azure task that reads the selected scope. Pipeline definitions and YAML belong to the separately built [terraform-az-fk-devops-pipeline](https://github.com/foggykitchen/terraform-az-fk-devops-pipeline) sibling and the caller's repository.
 
 The outputs expose the service connection ID/name and exact issuer/subject. Trust creation and the RBAC assignment are dependencies of the example's connection ID output; Entra and RBAC propagation can still take time. See the root [Provider Notes](../../README.md#provider-notes) before issuer conversion or connection renaming.
 
@@ -105,6 +127,14 @@ The outputs expose the service connection ID/name and exact issuer/subject. Trus
 ```bash
 tofu destroy
 ```
+
+Cleanup was completed successfully after collecting the screenshots:
+
+```text
+Destroy complete! Resources: 7 destroyed.
+```
+
+The local state contains no remaining managed resources. The Azure DevOps organization is external to this example and was retained.
 
 Review project contents before deletion. Destroying this example removes the project, application/service principal, federated trust, its composed role assignment and the example Resource Group. The existing subscription remains externally managed.
 
