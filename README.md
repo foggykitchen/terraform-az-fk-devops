@@ -18,6 +18,8 @@ Create one Azure DevOps project, one passwordless Azure Resource Manager service
 
 Pipeline YAML, including its stage/job/step graph, is **out of scope by design**. For YAML pipelines, the Azure DevOps Terraform provider's definition points at a YAML path in a repository; it does not expose that YAML's internal graph as resource attributes. The provider also supports some classic-pipeline job configuration, which is outside this module's scope. The sibling `terraform-az-fk-devops-pipeline` will own the definition pointer; delivery logic remains in the caller's repository.
 
+---
+
 ## ✨ What the module does
 
 The module creates:
@@ -55,6 +57,8 @@ Azure DevOps itself can provision default project contents, such as an initial r
 | Build/deploy stage graph | Azure Pipelines YAML owns the graph; not Terraform resource attributes |
 | Shared configuration | Azure DevOps variable groups, optionally Key Vault-linked; in scope |
 
+---
+
 ## Provider Notes
 
 Live discovery on **2026-10-14** verified and pinned **microsoft/azuredevops = 1.16.0** (current major **1**) and **hashicorp/azuread = 3.10.0**. Exact pins keep the reviewed schema reproducible while lockfiles remain ignored. The root has no AzureRM resources or provider requirement. Examples pin **AzureRM = 4.81.0**, the latest 4.x, to satisfy the existing Key Vault module's compatibility range; the current overall AzureRM release is 5.9.0. See [DISCOVERY.md](DISCOVERY.md) for live source links and argument-level findings.
@@ -83,6 +87,8 @@ Creation order is application → service principal → manual WIF endpoint → 
 
 Bootstrap provider authentication is separate from the pipeline service connection. Configure AzureDevOps provider authentication through its documented environment/OIDC options (organization URL can also use `AZDO_ORG_SERVICE_URL`); if your bootstrap method uses a PAT, inject it securely through the environment. Never put credentials in HCL or tfvars. AzureAD and example AzureRM providers can use an existing Azure CLI session or supported workload identity authentication. Do not assume the newly created connection authenticates the initial Terraform run.
 
+---
+
 ## 📂 Repository Structure
 
 ```text
@@ -105,11 +111,13 @@ terraform-az-fk-devops/
 
 Examples follow the current Azure convention: responsibility-named `devops.tf`, `rbac.tf`, optional `key_vault.tf`, plus `providers.tf`, `variables.tf`, `outputs.tf`, `terraform.tfvars.example`, and `README.md`. Root `variables.tf` follows this task's requested contract filename; older FoggyKitchen modules use `inputs.tf`.
 
+---
+
 ## 🚀 Example Usage
 
 ```hcl
 module "devops" {
-  source = "./path/to/terraform-az-fk-devops"
+  source = "git::https://github.com/foggykitchen/terraform-az-fk-devops.git?ref=0c82afa"
 
   project_name = "fk-devops-demo"
   service_connection = {
@@ -137,15 +145,17 @@ module "pipeline_access" {
 
 `Reader` is the smallest example permission for proving authenticated reads. Choose a workload-specific role at the narrowest target scope for deployments. Pipeline authors must authorize the individual pipeline to use the service connection and restricted variable groups; this module does not authorize all pipelines.
 
+---
+
 ## 📥 Module Inputs
 
 | Variable | Type | Required | Default | Description |
 |---|---|:---:|---|---|
-| `project_name` | `string` | yes | `—` | Azure DevOps project name. |
+| `project_name` | `string` | yes | — | Azure DevOps project name. |
 | `project_description` | `string` | no | `null` | Azure DevOps project description. |
-| `project_visibility` | `string` | no | `"private"` | Azure DevOps project visibility: private or public. |
-| `work_item_template` | `string` | no | `"Agile"` | Existing work item template name; empty string uses the organization default. |
-| `service_connection` | `object` | yes | `—` | One passwordless Azure Resource Manager service connection and its application name. |
+| `project_visibility` | `string` | no | `private` | Azure DevOps project visibility: private or public. |
+| `work_item_template` | `string` | no | `Agile` | Existing work item template name; empty string uses the organization default. |
+| `service_connection` | `object` | yes | — | One passwordless Azure Resource Manager service connection and its application name. |
 | `owners` | `set(string)` | no | `[]` | Additional Entra object IDs owning both the application and service principal. |
 | `include_current_principal_as_owner` | `bool` | no | `true` | Include the AzureAD provider principal as application and service principal owner. |
 | `variable_groups` | `map(object)` | no | `{}` | Plain nonsecret variables or Key Vault secret-name mappings, keyed by logical group name. |
@@ -160,6 +170,8 @@ Each `variable_groups` entry requires `name`; optional `description` defaults nu
 - Key Vault: `key_vault = { name = "existing-vault", search_depth = 20 }` and nonempty `secret_names = set(string)`, with no plain variables. The service endpoint is the module's WIF connection. `search_depth` must be a positive integer. No secret values enter the module.
 
 Group names must be unique and group/variable/vault names nonblank. `allow_access = true` shares a group with all project pipelines; leave the default false and authorize callers individually. Linked secret additions/removals require updating the input set; existing secret value rotations are fetched at runtime. The provider enumerates secret metadata and validates enabled names during creation, so authorization, network access and secret population must already be ready.
+
+---
 
 ## 📤 Module Outputs
 
@@ -178,13 +190,7 @@ Group names must be unique and group/variable/vault names nonblank. `allow_acces
 | `federated_identity_credential_id` | Entra federated identity credential resource ID. |
 | `variable_group_ids` | Variable group IDs keyed by logical name. |
 
-## Typical Integration Pattern
-
-1. Supply the existing organization and bootstrap provider credentials externally.
-2. Create shared project/WIF trust with this module.
-3. Grant access externally with `terraform-az-fk-rbac`; create a vault with `terraform-az-fk-key-vault` if needed.
-4. Populate Key Vault outside Terraform, then link selected secret names.
-5. Compose the separately built `terraform-az-fk-devops-pipeline` definition pointer and authorize its pipeline ID to use the connection/groups. Keep pipeline YAML in the source repository.
+---
 
 ## 🧭 Examples
 
@@ -193,12 +199,24 @@ Group names must be unique and group/variable/vault names nonblank. `allow_acces
 
 See [examples](examples/README.md). Dependencies are pinned to live-reviewed commit SHAs. Examples target existing resource groups and create no pipeline or YAML template.
 
+---
+
 ## 🧠 Design Philosophy
 
 - Long-lived control-plane resources stay separate from delivery logic.
 - Entra identity and service connection trust form one coherent passwordless unit.
 - Azure RBAC stays in its dedicated module; vaults and Azure deployment targets remain independently owned.
 - Identity outputs are composition points, and service connection readiness includes trust creation.
+
+### Typical Integration Pattern
+
+1. Supply the existing organization and bootstrap provider credentials externally.
+2. Create shared project/WIF trust with this module.
+3. Grant access externally with `terraform-az-fk-rbac`; create a vault with `terraform-az-fk-key-vault` if needed.
+4. Populate Key Vault outside Terraform, then link selected secret names.
+5. Compose the separately built `terraform-az-fk-devops-pipeline` definition pointer and authorize its pipeline ID to use the connection/groups. Keep pipeline YAML in the source repository.
+
+---
 
 ## 🧩 Related Modules & Training
 
@@ -210,9 +228,7 @@ See [examples](examples/README.md). Dependencies are pinned to live-reviewed com
 - [terraform-az-fk-entra-user](https://github.com/foggykitchen/terraform-az-fk-entra-user)
 - [terraform-az-fk-managed-identity](https://github.com/foggykitchen/terraform-az-fk-managed-identity)
 
-## Contributing
-
-This project is open source. Contributions are welcome through pull requests.
+---
 
 ## 🪪 License
 
