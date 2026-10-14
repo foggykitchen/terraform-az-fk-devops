@@ -58,3 +58,13 @@ output "variable_group_ids" {
   description = "Variable group IDs keyed by logical name."
   value       = { for key, group in azuredevops_variable_group.this : key => group.id }
 }
+
+output "github_service_connection_ids" {
+  description = "GitHub source service connection IDs keyed by logical name."
+  value       = { for key, connection in azuredevops_serviceendpoint_github.this : key => connection.id }
+}
+
+output "github_service_connection_names" {
+  description = "GitHub source service connection names keyed by logical name."
+  value       = { for key, connection in azuredevops_serviceendpoint_github.this : key => connection.service_endpoint_name }
+}

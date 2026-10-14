@@ -14,9 +14,9 @@ This module is intended as a focused building block for higher-level [FoggyKitch
 
 ## 🎯 Purpose
 
-Create one Azure DevOps project, one passwordless Azure Resource Manager service connection with an explicitly owned Entra application/service principal and federated trust, and optional variable groups. Azure DevOps / Azure Pipelines is the first-party Azure counterpart to OCI DevOps.
+Create one Azure DevOps project, one passwordless Azure Resource Manager service connection with an explicitly owned Entra application/service principal and federated trust, optional GitHub PAT source connections, and optional variable groups. Azure DevOps / Azure Pipelines is the first-party Azure counterpart to OCI DevOps.
 
-Pipeline YAML, including its stage/job/step graph, is **out of scope by design**. For YAML pipelines, the Azure DevOps Terraform provider's definition points at a YAML path in a repository; it does not expose that YAML's internal graph as resource attributes. The provider also supports some classic-pipeline job configuration, which is outside this module's scope. The sibling `terraform-az-fk-devops-pipeline` will own the definition pointer; delivery logic remains in the caller's repository.
+Pipeline YAML, including its stage/job/step graph, is **out of scope by design**. For YAML pipelines, the Azure DevOps Terraform provider's definition points at a YAML path in a repository; it does not expose that YAML's internal graph as resource attributes. The provider also supports some classic-pipeline job configuration, which is outside this module's scope. The sibling `terraform-az-fk-devops-pipeline` owns the definition pointer; delivery logic remains in the caller's repository.
 
 ---
 
@@ -28,13 +28,14 @@ The module creates:
 - One single-tenant `azuread_application` and `azuread_service_principal`, with explicit owners
 - One manual `azuredevops_serviceendpoint_azurerm` using `WorkloadIdentityFederation`
 - One `azuread_application_federated_identity_credential` trusting the exact issuer/subject exported by that endpoint
+- Optional `azuredevops_serviceendpoint_github` resources for GitHub source access
 - Optional `azuredevops_variable_group` resources containing plain nonsecret key/value entries or Key Vault secret-name mappings
 
 The module intentionally does **not** create:
 
 - The Azure DevOps organization (an existing organization is required; this provider does not create organizations)
 - Pipeline definitions, pipeline YAML, or stage/job/step logic
-- Source repositories or GitHub repository connections
+- Source repositories, GitHub App installation or interactive OAuth consent
 - Azure role assignments (compose `terraform-az-fk-rbac` externally)
 - Resource Groups, VNets, or any Azure networking
 - Target Azure resources such as VM Scale Sets or databases that a pipeline will later deploy
@@ -47,7 +48,7 @@ Azure DevOps itself can provision default project contents, such as an initial r
 | OCI control-plane capability | Azure counterpart and ownership |
 |---|---|
 | DevOps project | Azure DevOps project; in scope |
-| External connections | ARM WIF service connection; in scope. Source-host connections are excluded |
+| External connections | ARM WIF and optional GitHub PAT service connections; in scope |
 | ONS topic/project notifications | Azure DevOps notifications/service hooks exist, but no direct ONS project-binding equivalent; out of scope |
 | OCI Logging service log/group | Azure DevOps audit and pipeline logs exist, but no equivalent OCI project service-log binding; export/monitoring configuration is out of scope |
 | Mirrored source repositories | Azure Repos/import and external source integrations exist; source lifecycle is excluded |
@@ -63,7 +64,7 @@ Azure DevOps itself can provision default project contents, such as an initial r
 
 Live discovery on **2026-10-14** verified and pinned **microsoft/azuredevops = 1.16.0** (current major **1**) and **hashicorp/azuread = 3.10.0**. Exact pins keep the reviewed schema reproducible while lockfiles remain ignored. The root has no AzureRM resources or provider requirement. Examples pin **AzureRM = 4.81.0**, the latest 4.x, to satisfy the existing Key Vault module's compatibility range; the current overall AzureRM release is 5.9.0. See [DISCOVERY.md](DISCOVERY.md) for live source links and argument-level findings.
 
-WIF is an authentication scheme on `azuredevops_serviceendpoint_azurerm`, not a separate resource. Its `credentials` block contains **only the application client ID**. No app password, client secret, or certificate is generated or stored. Azure Pipelines exchanges a short-lived OIDC token for an Azure token through Entra; external Azure RBAC determines what that identity may do.
+WIF is an authentication scheme on `azuredevops_serviceendpoint_azurerm`, not a separate resource. Its `credentials` block contains **only the application client ID**. No Azure app password, client secret, or certificate is generated or stored. Optional GitHub PAT connections use a separate source-host credential, which the provider stores in Terraform state. Azure Pipelines exchanges a short-lived OIDC token for an Azure token through Entra; external Azure RBAC determines what that identity may do.
 
 Creation order is application → service principal → manual WIF endpoint → application federated credential. The credential uses `application.id` (the application resource ID), audience `api://AzureADTokenExchange`, and the endpoint's exported issuer/subject. Endpoint validation is disabled during creation because trust is established afterward. The `service_connection_id` output waits for that trust; variable groups also wait for it. This establishes configuration dependencies, not a guarantee that Entra propagation or a real pipeline login has been tested.
 
@@ -75,6 +76,24 @@ Creation order is application → service principal → manual WIF endpoint → 
 | Microsoft Entra | `https://login.microsoftonline.com/{tenant-id}/v2.0` | `{entra-prefix}/sc/{organization-id}/{service-connection-id}` |
 
 [Microsoft's configuration guidance](https://learn.microsoft.com/en-us/azure/devops/pipelines/release/configure-workload-identity?view=azure-devops) says new connections use the Entra issuer by default and eligible legacy Azure DevOps issuers retire **July 1, 2027**. The module consumes returned claims and never constructs either format. Provider 1.16.0 has no explicit issuer-family selector; inspect outputs after deployment and reconcile trust during conversion or renames. The provider docs' older private-preview note is superseded by Microsoft's GA guidance. No real-organization deployment was performed to verify which issuer the service returns. These are Azure DevOps claims, not GitHub Actions `repo:` claims.
+
+### GitHub source connections
+
+`github_service_connections` creates optional PAT-based GitHub endpoints in the project. This shared connection belongs alongside ARM WIF and variable groups, matching the external-connection ownership of `terraform-oci-fk-devops`. It does not create or mirror the repository.
+
+```hcl
+github_service_connections = {
+  hello_world = { name = "fk-github-hello-world" }
+}
+```
+
+Pass a sensitive `github_service_connection_tokens` map with matching logical keys through secure runtime configuration, or omit a key to use the provider's `AZDO_GITHUB_SERVICE_CONNECTION_PAT` environment fallback. A shared environment PAT applies to every connection without an explicit token. Missing credentials fail when the provider configures or creates the connection. Metadata is separate from sensitive tokens so resource `for_each` keys stay nonsensitive.
+
+GitHub PATs are separate from AzureDevOps bootstrap credentials and ARM OIDC trust. Do not put real tokens in HCL, committed tfvars, screenshots or logs. **The provider retains GitHub PATs in state, including when supplied through the environment.** Protect local state or use an access-controlled, encrypted remote backend. Sensitive input flags hide values in normal output; they do not remove values from state. Select credential permissions appropriate to the source repository and GitHub organization policies.
+
+The module supports PAT connection creation only. The [provider documentation](https://github.com/microsoft/terraform-provider-azuredevops/blob/v1.16.0/website/docs/r/serviceendpoint_github.html.markdown) confirms that GitHub App installation and OAuth consent require an external setup/import workflow; this module does not automate that consent. Public repositories still use a source endpoint in the sibling pipeline module's GitHub configuration.
+
+No all-pipeline authorization is created here. The pipeline sibling consumes `github_service_connection_ids` and authorizes only its own pipeline ID. ARM outputs retain their existing names and semantics.
 
 ### Prerequisites and authentication
 
@@ -96,8 +115,10 @@ terraform-az-fk-devops/
 ├── examples/
 │   ├── 01_project_with_oidc_service_connection/
 │   ├── 02_project_with_keyvault_variable_group/
+│   ├── 03_project_with_github_service_connection/
 │   └── README.md
 ├── main.tf
+├── github.tf
 ├── variables.tf
 ├── outputs.tf
 ├── versions.tf
@@ -117,7 +138,7 @@ Examples follow the current Azure convention: responsibility-named `devops.tf`, 
 
 ```hcl
 module "devops" {
-  source = "git::https://github.com/foggykitchen/terraform-az-fk-devops.git?ref=0c82afa"
+  source = "git::https://github.com/foggykitchen/terraform-az-fk-devops.git?ref=v0.2.0"
 
   project_name = "fk-devops-demo"
   service_connection = {
@@ -159,10 +180,14 @@ module "pipeline_access" {
 | `owners` | `set(string)` | no | `[]` | Additional Entra object IDs owning both the application and service principal. |
 | `include_current_principal_as_owner` | `bool` | no | `true` | Include the AzureAD provider principal as application and service principal owner. |
 | `variable_groups` | `map(object)` | no | `{}` | Plain nonsecret variables or Key Vault secret-name mappings, keyed by logical group name. |
+| `github_service_connections` | `map(object)` | no | `{}` | GitHub PAT service connections keyed by stable logical name. |
+| `github_service_connection_tokens` | `map(string)` (sensitive) | no | `{}` | Sensitive GitHub PATs keyed by logical connection name; omitted keys use AZDO_GITHUB_SERVICE_CONNECTION_PAT. |
 
 See [variables.tf](variables.tf) for the exact nested object schemas and validations.
 
 `service_connection` requires `name`, `subscription_id`, `subscription_name`; optional `application_display_name` defaults to `{project_name}-{name}` and `description` defaults to `Managed by Terraform/OpenTofu with workload identity federation`.
+
+`github_service_connections` entries require `name`; optional `description` defaults to `Managed by Terraform/OpenTofu`. Keys/names must be nonblank and names unique. Explicit token values must be nonblank. Both GitHub maps default to `{}` and reject null, so existing callers create no source endpoints.
 
 Each `variable_groups` entry requires `name`; optional `description` defaults null and `allow_access` defaults false. Choose exactly one mode:
 
@@ -189,6 +214,8 @@ Group names must be unique and group/variable/vault names nonblank. `allow_acces
 | `workload_identity_federation_subject` | Exact OIDC subject returned by Azure DevOps. |
 | `federated_identity_credential_id` | Entra federated identity credential resource ID. |
 | `variable_group_ids` | Variable group IDs keyed by logical name. |
+| `github_service_connection_ids` | GitHub source service connection IDs keyed by logical name. |
+| `github_service_connection_names` | GitHub source service connection names keyed by logical name. |
 
 ---
 
@@ -196,8 +223,9 @@ Group names must be unique and group/variable/vault names nonblank. `allow_acces
 
 - [01_project_with_oidc_service_connection](examples/01_project_with_oidc_service_connection/): smallest project/WIF/RBAC configuration, using Reader on its own Resource Group.
 - [02_project_with_keyvault_variable_group](examples/02_project_with_keyvault_variable_group/): adds a composed Key Vault and a staged secret-name-only variable-group link.
+- [03_project_with_github_service_connection](examples/03_project_with_github_service_connection/): adds an optional GitHub source endpoint through this module, ready for pipeline composition.
 
-See [examples](examples/README.md). Dependencies are pinned to live-reviewed commit SHAs. Both examples create their own Resource Group in `resource_group.tf`. Both create no pipeline or YAML template.
+See [examples](examples/README.md). Dependencies are pinned to live-reviewed commit SHAs. All examples create their own Resource Group in `resource_group.tf`. None creates a pipeline or YAML template. Example 03 uses externally supplied GitHub credentials and was statically validated only.
 
 ---
 
@@ -211,10 +239,10 @@ See [examples](examples/README.md). Dependencies are pinned to live-reviewed com
 ### Typical Integration Pattern
 
 1. Supply the existing organization and bootstrap provider credentials externally.
-2. Create shared project/WIF trust with this module.
+2. Create shared project/WIF trust, optional GitHub source connections and groups with this module.
 3. Grant access externally with `terraform-az-fk-rbac`; create a vault with `terraform-az-fk-key-vault` if needed.
 4. Populate Key Vault outside Terraform, then link selected secret names.
-5. Compose the separately built `terraform-az-fk-devops-pipeline` definition pointer and authorize its pipeline ID to use the connection/groups. Keep pipeline YAML in the source repository.
+5. Compose the separately built `terraform-az-fk-devops-pipeline` definition pointer and authorize its pipeline ID to use the ARM/GitHub connections and groups. Keep pipeline YAML in the source repository.
 
 ---
 

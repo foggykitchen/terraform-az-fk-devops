@@ -1,7 +1,7 @@
 # Azure DevOps with Terraform/OpenTofu – Training Examples
 
 This directory contains all progressive examples used with the **terraform-az-fk-devops** module.
-The examples are designed as **incremental building blocks**, starting with a passwordless ARM service connection and then introducing Key Vault-linked variable groups.
+The examples are designed as **incremental building blocks**, starting with a passwordless ARM service connection then introducing Key Vault-linked variable groups and optional GitHub source connections.
 
 These examples are part of the **[FoggyKitchen.com training ecosystem](https://foggykitchen.com/courses)** and focus on shared Azure DevOps control-plane resources.
 
@@ -13,6 +13,7 @@ These examples are part of the **[FoggyKitchen.com training ecosystem](https://f
 |:-------:|:------|:-----------|
 | [01](01_project_with_oidc_service_connection/) | **Project with OIDC Service Connection** | Azure DevOps project, Entra application/SP, ARM WIF connection, federated trust, external FK RBAC |
 | [02](02_project_with_keyvault_variable_group/) | **Project with Key Vault Variable Group** | Same foundation, composed Key Vault, Get/List access, externally populated secrets, staged variable-group link |
+| [03](03_project_with_github_service_connection/) | **Project with GitHub Service Connection** | Optional PAT source connection created by the module, separate ARM/GitHub identities, endpoint ID outputs |
 
 Each example builds on the **concepts** introduced in the previous one, but can be applied independently for learning and experimentation. Use different project names if keeping both configurations.
 
@@ -40,11 +41,11 @@ tofu validate
 ```
 
 The recommended learning sequence is:
-**01 → 02**
+**01 → 02 → 03**
 
-Read the selected example's Deployment Steps before provisioning it. Both require an existing organization and subscription, bootstrap authentication and administration rights. Both examples create their Resource Group in `resource_group.tf`. Example 02 first creates an empty vault with the group link disabled; populate secrets outside Terraform before enabling the link.
+Read the selected example's Deployment Steps before provisioning it. All require an existing organization and subscription, bootstrap authentication and administration rights. All examples create their Resource Group in `resource_group.tf`. Example 02 first creates an empty vault with the group link disabled; populate secrets outside Terraform before enabling the link.
 
-Both examples passed static validation. During initial module verification neither was planned or applied. Example 01 was subsequently deployed successfully (7 resources) in foggykitchendevops after resolving organization access; its screenshots are documented in the example README, and all 7 managed resources were subsequently destroyed successfully. Runtime OIDC token exchange is not yet tested. Example 02 has been deployed in two stages (8 foundation resources, then 1 linked variable group). The manually populated demo-secret is mapped by name; seven screenshots document the configuration. All 9 managed resources were subsequently destroyed successfully. Pipeline runtime secret retrieval has not been tested. Full output is available in [VERIFICATION.md](../VERIFICATION.md).
+Examples 01 and 02 passed static validation. Example 03 adds GitHub connection composition and is checked separately with static validation; no deployment was performed for it. During initial module verification neither was planned or applied. Example 01 was subsequently deployed successfully (7 resources) in foggykitchendevops after resolving organization access; its screenshots are documented in the example README, and all 7 managed resources were subsequently destroyed successfully. Runtime OIDC token exchange is not yet tested. Example 02 has been deployed in two stages (8 foundation resources, then 1 linked variable group). The manually populated demo-secret is mapped by name; seven screenshots document the configuration. All 9 managed resources were subsequently destroyed successfully. Pipeline runtime secret retrieval has not been tested. Full output is available in [VERIFICATION.md](../VERIFICATION.md).
 
 ---
 
@@ -55,6 +56,7 @@ Both examples passed static validation. During initial module verification neith
 - Azure RBAC and Key Vault lifecycle composed through dedicated modules
 - Existing organization supplied explicitly; each example creates its RBAC scope as a Resource Group
 - Secret names may be configured; secret values and provider credentials stay outside source control
+- Optional GitHub PAT credentials are supplied externally and retained in protected state
 - Static validation is not represented as successful runtime deployment
 
 These examples intentionally avoid:

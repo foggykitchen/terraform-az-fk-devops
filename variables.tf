@@ -93,3 +93,35 @@ variable "variable_groups" {
     error_message = "Variable group names must be unique."
   }
 }
+
+variable "github_service_connections" {
+  description = "GitHub PAT service connections keyed by stable logical name."
+  type = map(object({
+    name        = string
+    description = optional(string, "Managed by Terraform/OpenTofu")
+  }))
+  default  = {}
+  nullable = false
+  validation {
+    condition = alltrue([for key, connection in var.github_service_connections :
+      length(trimspace(key)) > 0 && length(trimspace(connection.name)) > 0
+    ])
+    error_message = "GitHub connection keys and names must not be blank."
+  }
+  validation {
+    condition     = length(distinct([for connection in var.github_service_connections : connection.name])) == length(var.github_service_connections)
+    error_message = "GitHub service connection names must be unique."
+  }
+}
+
+variable "github_service_connection_tokens" {
+  description = "Sensitive GitHub PATs keyed by logical connection name; omitted keys use AZDO_GITHUB_SERVICE_CONNECTION_PAT."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+  nullable    = false
+  validation {
+    condition     = alltrue([for token in values(var.github_service_connection_tokens) : try(length(trimspace(token)) > 0, false)])
+    error_message = "Explicit GitHub PATs must not be null or blank."
+  }
+}
