@@ -26,7 +26,7 @@ flowchart LR
 This example creates:
 
 - The project, Entra identity and federated trust from Example 01
-- An external FK RBAC assignment for the existing target Azure scope
+- An external FK RBAC assignment at the example Resource Group scope
 - One Resource Group in `resource_group.tf`
 - One Key Vault through `terraform-az-fk-key-vault`, in the Resource Group created by this example
 - A Get/List access policy for the pipeline service principal
@@ -96,7 +96,7 @@ Set the existing enabled secret names and enable the variable group:
 
 ```hcl
 link_variable_group = true
-secret_names        = ["existing-application-secret"]
+secret_names        = ["demo-secret"]
 ```
 
 Reconcile the updated configuration:
@@ -115,7 +115,33 @@ Authorize the intended pipeline to use both the connection and variable group. `
 
 ## 🖼️ Azure Portal View
 
-Stage 1 has been deployed successfully; Azure Portal and Azure DevOps screenshots have not yet been collected. After both stages, inspect the vault access policy, Entra federated credential and the Library variable group's secret-name mappings.
+<img src="02_project_with_keyvault_variable_group_project_overview.jpg" width="900"/>
+
+*Figure 1. Private Azure DevOps project fk-devops-demo in the foggykitchendevops organization.*
+
+<img src="02_project_with_keyvault_variable_group_service_connection.jpg" width="900"/>
+
+*Figure 2. Azure Resource Manager service connection fk-azure-oidc configured with Workload Identity federation (Manual), without a stored Azure client secret.*
+
+<img src="02_project_with_keyvault_variable_group_key_vault_overview.jpg" width="900"/>
+
+*Figure 3. Standard Key Vault fk-devops-kv-9f064c73 in the foggykitchen-rg Resource Group and West Europe region, with soft deletion enabled.*
+
+<img src="02_project_with_keyvault_variable_group_access_policy.jpg" width="900"/>
+
+*Figure 4. Key Vault access policy granting the fk-devops-demo-fk-azure-oidc application service principal Get and List permissions for secrets.*
+
+<img src="02_project_with_keyvault_variable_group_role_assignment.jpg" width="900"/>
+
+*Figure 5. Reader role inherited by the Key Vault from its Resource Group scope. This management-plane assignment is separate from the secret Get/List access policy shown in Figure 4.*
+
+<img src="02_project_with_keyvault_variable_group_secret_names.jpg" width="900"/>
+
+*Figure 6. Enabled demo-secret created manually in Key Vault outside Terraform. Only the secret name and status are shown; its value is not exposed.*
+
+<img src="02_project_with_keyvault_variable_group_variable_group.jpg" width="900"/>
+
+*Figure 7. Azure DevOps variable group fk-key-vault-secrets linked to fk-devops-kv-9f064c73 through the fk-azure-oidc service connection, mapping the enabled demo-secret by name.*
 
 ---
 
@@ -137,7 +163,13 @@ A later user-authorized stage 1 apply completed successfully:
 Apply complete! Resources: 8 added, 0 changed, 0 destroyed.
 ```
 
-Stage 1 created the project, WIF trust, Resource Group, external RBAC and Key Vault. The group link remains disabled (`variable_group_ids = {}`) pending external secret population. Stage 2 and runtime token exchange have not yet been verified. To verify passwordless authentication after deployment, authorize an independently managed Azure Pipeline to use the connection, then run a WIF-capable Azure task that reads the selected scope. Pipeline definitions and YAML belong to the separately built [terraform-az-fk-devops-pipeline](https://github.com/foggykitchen/terraform-az-fk-devops-pipeline) sibling and the caller's repository.
+Stage 1 created the project, WIF trust, Resource Group, external RBAC and Key Vault. After demo-secret was populated manually outside Terraform, stage 2 enabled the link and created the variable group:
+
+```text
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+```
+
+The resulting `variable_group_ids` output contains `vault = "1"`. The provider successfully validated the existing secret metadata through the WIF service connection, and the Library view confirms the enabled mapping. The secret value was not supplied to Terraform. Pipeline runtime retrieval of the secret has not been tested. To verify passwordless authentication after deployment, authorize an independently managed Azure Pipeline to use the connection, then run a WIF-capable Azure task that reads the selected scope. Pipeline definitions and YAML belong to the separately built [terraform-az-fk-devops-pipeline](https://github.com/foggykitchen/terraform-az-fk-devops-pipeline) sibling and the caller's repository.
 
 The outputs expose the service connection ID/name and exact issuer/subject. Trust creation and the RBAC assignment are dependencies of the example's connection ID output; Entra and RBAC propagation can still take time. See the root [Provider Notes](../../README.md#provider-notes) before issuer conversion or connection renaming.
 

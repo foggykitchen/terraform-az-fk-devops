@@ -238,3 +238,13 @@ Apply complete! Resources: 8 added, 0 changed, 0 destroyed.
 ```
 
 The vault is fk-devops-kv-9f064c73; the variable-group link remains disabled and variable_group_ids is empty. Stage 2 and runtime OIDC are not yet verified.
+
+## Example 02 stage 2 and screenshots
+
+After the user created demo-secret manually outside Terraform, the authorized second apply enabled the Key Vault link:
+
+```text
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+```
+
+The created group is fk-key-vault-secrets, with variable_group_ids = { vault = "1" }. The provider validated enabled secret metadata through the WIF endpoint. Pipeline runtime retrieval of the value was not tested. Seven screenshots are included in the example README as Figures 1–7: project, WIF connection, vault, Get/List policy, inherited Reader assignment, secret names, and linked variable group. The screenshots contain no displayed secret values.

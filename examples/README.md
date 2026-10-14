@@ -44,7 +44,7 @@ The recommended learning sequence is:
 
 Read the selected example's Deployment Steps before provisioning it. Both require an existing organization and subscription, bootstrap authentication and administration rights. Both examples create their Resource Group in `resource_group.tf`. Example 02 first creates an empty vault with the group link disabled; populate secrets outside Terraform before enabling the link.
 
-Both examples passed static validation. During initial module verification neither was planned or applied. Example 01 was subsequently deployed successfully (7 resources) in foggykitchendevops after resolving organization access; its screenshots are documented in the example README, and all 7 managed resources were subsequently destroyed successfully. Runtime OIDC token exchange is not yet tested. Example 02 stage 1 has now been deployed successfully (8 resources); secret population and the variable-group link remain pending. Full output is available in [VERIFICATION.md](../VERIFICATION.md).
+Both examples passed static validation. During initial module verification neither was planned or applied. Example 01 was subsequently deployed successfully (7 resources) in foggykitchendevops after resolving organization access; its screenshots are documented in the example README, and all 7 managed resources were subsequently destroyed successfully. Runtime OIDC token exchange is not yet tested. Example 02 has been deployed in two stages (8 foundation resources, then 1 linked variable group). The manually populated demo-secret is mapped by name; seven screenshots document the configuration. Pipeline runtime secret retrieval has not been tested. Full output is available in [VERIFICATION.md](../VERIFICATION.md).
 
 ---
 
