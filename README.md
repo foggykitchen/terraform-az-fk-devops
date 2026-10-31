@@ -258,6 +258,13 @@ See [examples](examples/README.md). Dependencies are pinned to live-reviewed com
 
 ---
 
+## Related technical articles
+
+- [Azure DevOps with Terraform: Build and Deploy to Private AKS](https://foggykitchen.com/2026/10/26/azure-devops-with-terraform-private-aks-delivery/)
+  — Understand how federated Azure service connections, source authentication and scoped permissions connect to a private AKS delivery workflow.
+
+---
+
 ## 🪪 License
 
 Licensed under the **Universal Permissive License (UPL), Version 1.0**.
